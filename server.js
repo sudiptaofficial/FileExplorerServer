@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const dotEnv = require('dotenv');
 require("./config");
 const cors = require('cors');
+const fileRoutes = require('./routes/FileRoutes')
 
 
 const app = express();
@@ -11,6 +12,8 @@ app.use(express.json())
 
 
 const port = process.env.PORT || 5000;
+
+app.use('/api', fileRoutes);
 
 //Server Connection
 app.listen(port,()=>{
