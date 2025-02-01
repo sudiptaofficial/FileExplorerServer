@@ -20,4 +20,4 @@ app.listen(port,()=>{
 //Database Connection
 mongoose.connect(process.env.DB_URL, {})
     .then(() => console.log("Database Connected"))
-    .catch(err => console.error(err))
+    .catch(err => console.error(err));
