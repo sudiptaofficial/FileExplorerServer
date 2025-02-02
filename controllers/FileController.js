@@ -17,19 +17,6 @@ exports.createFolder = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-  // try {
-  //   const { name, parentId } = req.body;
-  //   const folder = new File({
-  //     name,
-  //     type: 'folder',
-  //     parentId: parentId || null,
-  //     user: req.user._id
-  //   });
-  //   await folder.save();
-  //   res.status(201).json(folder);
-  // } catch (err) {
-  //   res.status(500).json({ message: err.message });
-  // }
 };
 
 /**
