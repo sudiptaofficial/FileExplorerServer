@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
+const authMiddleware = require("../Middleware/auth");
 
 const {
   createFolder,
@@ -13,11 +14,12 @@ const {
   downloadFile
 } = require('../controllers/FileController');
 
-router.post('/folder', createFolder);
-router.post('/file', upload.single('file'), uploadFile);
-router.get('/files', getFiles);
-router.put('/file/:id', renameFile);
-router.delete('/file/:id', deleteFile);
-router.get('/download/:id', downloadFile);
+// All file routes require authentication
+router.post('/folder', authMiddleware, createFolder);
+router.post('/file', authMiddleware, upload.single('file'), uploadFile);
+router.get('/files', authMiddleware, getFiles);
+router.put('/file/:id', authMiddleware, renameFile);
+router.delete('/file/:id', authMiddleware, deleteFile);
+router.get('/download/:id', authMiddleware, downloadFile);
 
 module.exports = router;
