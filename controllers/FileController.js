@@ -37,24 +37,50 @@ exports.createFolder = async (req, res) => {
  */
 exports.uploadFile = async (req, res) => {
   try {
-    const { parentId } = req.body;
+    let { parentId, relativePath } = req.body;
+    // Convert string "null" to actual null.
+    let parentIdParsed = parentId === "null" ? null : parentId;
+
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
-    const parsedParentId = parentId === "null" ? null : parentId;
+
+    // If a relativePath is provided, create the folder structure recursively.
+    // Example: relativePath = "folderA/folderB"
+    if (relativePath) {
+      const folders = relativePath.split('/').filter(Boolean);
+      for (const folderName of folders) {
+        // Check if folder already exists for this user and parent.
+        let folder = await File.findOne({ 
+          name: folderName, 
+          type: 'folder', 
+          parentId: parentIdParsed, 
+          user: req.user._id 
+        });
+        if (!folder) {
+          folder = new File({
+            name: folderName,
+            type: 'folder',
+            parentId: parentIdParsed,
+            user: req.user._id
+          });
+          await folder.save();
+        }
+        parentIdParsed = folder._id;
+      }
+    }
 
     const file = new File({
       name: req.file.originalname,
       type: 'file',
-      parentId: parsedParentId,
+      parentId: parentIdParsed,
       data: req.file.buffer,
+      size: req.file.size, // store the file size in bytes
       user: req.user._id
     });
-   
     await file.save();
     res.status(201).json(file);
   } catch (err) {
-    console.log(err)
     res.status(500).json({ message: err.message });
   }
 };
@@ -82,11 +108,23 @@ exports.getFiles = async (req, res) => {
 exports.renameFile = async (req, res) => {
   try {
     const { name } = req.body;
-    const file = await File.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
-      { name },
-      { new: true }
-    );
+    // Find the file/folder belonging to the user.
+    let file = await File.findOne({ _id: req.params.id, user: req.user._id });
+    if (!file) return res.status(404).json({ message: "Not found" });
+
+    if (file.type === 'file') {
+      // Preserve the original extension.
+      const originalParts = file.name.split('.');
+      const originalExt = originalParts.length > 1 ? originalParts.pop() : "";
+      // Remove any extension the user might have entered.
+      const newBase = name.includes('.') ? name.split('.').slice(0, -1).join('.') : name;
+      file.name = originalExt ? `${newBase}.${originalExt}` : newBase;
+    } else {
+      // For folders, allow full renaming.
+      file.name = name;
+    }
+
+    await file.save();
     res.json(file);
   } catch (err) {
     res.status(500).json({ message: err.message });
